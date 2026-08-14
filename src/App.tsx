@@ -1,8 +1,6 @@
 /**
  * PitchBench — AI Pitch Deck Generator & Investor Benchmark Engine
- */
-
-import React, { useState, useEffect } from 'react';
+ */import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { InputForm } from './components/InputForm';
 import { PipelineProgress } from './components/PipelineProgress';
@@ -10,7 +8,8 @@ import { SlideViewer } from './components/SlideViewer';
 import { BenchmarkSummaryPanel } from './components/BenchmarkSummaryPanel';
 import { PresentationModal } from './components/PresentationModal';
 import { SampleDecksModal } from './components/SampleDecksModal';
-import { SAMPLE_BENCHMARKS } from './data/sampleBenchmarks';
+import { ReferenceDeckViewerModal } from './components/ReferenceDeckViewerModal';
+import { SAMPLE_BENCHMARKS, getRelevantBenchmarkDecks } from './data/sampleBenchmarks';
 import {
   BenchmarkDeck,
   FileUploadStatus,
@@ -31,8 +30,10 @@ export default function App() {
   );
   const [industryVertical, setIndustryVertical] = useState<string>('AI/ML');
 
-  // Grounding Data State (Default 10 Reference Decks)
-  const [benchmarks, setBenchmarks] = useState<BenchmarkDeck[]>(SAMPLE_BENCHMARKS);
+  // Grounding Data State (Default 10 Reference Decks matched to industry vertical)
+  const [benchmarks, setBenchmarks] = useState<BenchmarkDeck[]>(() =>
+    getRelevantBenchmarkDecks('AI/ML')
+  );
   const [uploadedFiles, setUploadedFiles] = useState<FileUploadStatus[]>([]);
 
   // Pipeline Execution State
@@ -45,17 +46,19 @@ export default function App() {
   // Modals
   const [showPresentation, setShowPresentation] = useState(false);
   const [showSampleDecks, setShowSampleDecks] = useState(false);
+  const [selectedReferenceDeck, setSelectedReferenceDeck] = useState<BenchmarkDeck | null>(null);
+
+  // Update relevant benchmarks whenever industry vertical changes
+  useEffect(() => {
+    if (industryVertical) {
+      const relevantDecks = getRelevantBenchmarkDecks(industryVertical, businessIdea);
+      setBenchmarks(relevantDecks);
+    }
+  }, [industryVertical]);
 
   // Load persisted dataset if available
   useEffect(() => {
     try {
-      const savedBenchmarks = localStorage.getItem('pitchbench_benchmarks');
-      if (savedBenchmarks) {
-        const parsed = JSON.parse(savedBenchmarks);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setBenchmarks(parsed);
-        }
-      }
       const savedDeck = localStorage.getItem('pitchbench_generated_deck');
       if (savedDeck) {
         setGeneratedData(JSON.parse(savedDeck));
@@ -160,8 +163,8 @@ export default function App() {
   };
 
   const handleLoadSampleDecks = () => {
-    saveBenchmarksToStorage(SAMPLE_BENCHMARKS);
-    alert('Loaded 10 reference benchmark pitch decks (Airbnb, Uber, Buffer, Stripe, Brex, Loom, HealthPulse, Verdant, Edify, CognitiveNode).');
+    const relevant = getRelevantBenchmarkDecks(industryVertical, businessIdea);
+    saveBenchmarksToStorage(relevant);
   };
 
   // Full 3-Stage Pipeline Action
@@ -170,16 +173,9 @@ export default function App() {
     setCurrentStage('extracting');
 
     try {
-      // Stage 1 Check: Ensure benchmark dataset exists (from uploaded PDFs or pre-loaded reference decks)
-      let activeBenchmarks = [...benchmarks];
-      const pendingFiles = uploadedFiles.filter((f) => f.status === 'pending');
-
-      if (pendingFiles.length > 0) {
-        // Run extraction on pending files first
-        // Already handled or can be processed
-      }
-
-      const extractedDoneCount = activeBenchmarks.length;
+      // Stage 1 Check: Ensure benchmark dataset contains strictly relevant vertical decks
+      const activeBenchmarks = getRelevantBenchmarkDecks(industryVertical, businessIdea, benchmarks);
+      setBenchmarks(activeBenchmarks);
 
       // Stage 2: Deck Generation
       setCurrentStage('generating');
@@ -282,7 +278,11 @@ export default function App() {
 
       const data = await res.json();
       const updatedSlide: PitchSlide = data.slide;
-      const updatedCritique: InvestorCritique = data.critique;
+      const updatedCritique: InvestorCritique = {
+        ...(data.critique || critique),
+        is_fixed: true,
+        severity: 'fixed',
+      };
 
       const updatedSlides = generatedData.slides.map((s) =>
         s.slide_number === slideNumber ? updatedSlide : s
@@ -336,7 +336,12 @@ export default function App() {
 
       const data = await res.json();
       const updatedSlides: PitchSlide[] = data.slides || generatedData.slides;
-      const updatedCritiques: InvestorCritique[] = data.critiques || generatedData.critiques;
+      const rawCritiques: InvestorCritique[] = data.critiques || generatedData.critiques;
+      const updatedCritiques: InvestorCritique[] = rawCritiques.map((c) => ({
+        ...c,
+        is_fixed: true,
+        severity: 'fixed',
+      }));
 
       const newData = {
         ...generatedData,
@@ -483,14 +488,14 @@ export default function App() {
           isProcessing={currentStage === 'extracting' || currentStage === 'generating' || currentStage === 'critiquing'}
         />
 
-        {/* Pipeline Execution Progress Indicator */}
+        {/* Pipeline Progress Indicator */}
         <PipelineProgress
           currentStage={currentStage}
           fileCount={uploadedFiles.length || benchmarks.length}
           extractedCount={extractedCount}
         />
 
-        {/* Error Banner if Pipeline Fails */}
+        {/* Error Banner */}
         {errorMessage && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 text-red-800 text-sm">
             <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
@@ -510,7 +515,7 @@ export default function App() {
                 <span>Generated 10-Slide Pitch Deck</span>
               </h2>
               <span className="text-xs text-zinc-500 font-mono">
-                Grounded in {benchmarks.length} reference pitch decks
+                Grounded in {benchmarks.length} reference pitch decks ({industryVertical})
               </span>
             </div>
 
@@ -532,6 +537,7 @@ export default function App() {
             <BenchmarkSummaryPanel
               summary={generatedData.benchmark_summary}
               benchmarks={benchmarks}
+              onViewReferenceDeck={(deck) => setSelectedReferenceDeck(deck)}
             />
           </div>
         )}
@@ -555,6 +561,18 @@ export default function App() {
         <SampleDecksModal
           benchmarks={benchmarks}
           onClose={() => setShowSampleDecks(false)}
+          onViewReferenceDeck={(deck) => {
+            setShowSampleDecks(false);
+            setSelectedReferenceDeck(deck);
+          }}
+        />
+      )}
+
+      {/* Reference Pitch Deck Deep Inspection Modal */}
+      {selectedReferenceDeck && (
+        <ReferenceDeckViewerModal
+          deck={selectedReferenceDeck}
+          onClose={() => setSelectedReferenceDeck(null)}
         />
       )}
     </div>

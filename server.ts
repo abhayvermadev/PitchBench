@@ -237,8 +237,12 @@ const critiqueSchema = {
           },
           severity: {
             type: Type.STRING,
-            enum: ['high', 'medium', 'low'],
+            enum: ['high', 'medium', 'low', 'fixed'],
             description: 'Severity level of the investor concern',
+          },
+          is_fixed: {
+            type: Type.BOOLEAN,
+            description: 'True if VC critique and recommended fix has been applied to slide',
           },
         },
         required: ['slide_number', 'slide_name', 'concern', 'suggested_fix', 'severity'],
@@ -260,7 +264,8 @@ const singleSlideSchema = {
         slide_name: { type: Type.STRING },
         concern: { type: Type.STRING },
         suggested_fix: { type: Type.STRING },
-        severity: { type: Type.STRING, enum: ['high', 'medium', 'low'] },
+        severity: { type: Type.STRING, enum: ['high', 'medium', 'low', 'fixed'] },
+        is_fixed: { type: Type.BOOLEAN },
       },
       required: ['slide_number', 'slide_name', 'concern', 'suggested_fix', 'severity'],
     },
@@ -294,9 +299,10 @@ const deckAndCritiquesSchema = {
           },
           severity: {
             type: Type.STRING,
-            enum: ['high', 'medium', 'low'],
+            enum: ['high', 'medium', 'low', 'fixed'],
             description: 'Updated severity level',
           },
+          is_fixed: { type: Type.BOOLEAN },
         },
         required: ['slide_number', 'slide_name', 'concern', 'suggested_fix', 'severity'],
       },
@@ -592,6 +598,10 @@ Return strictly valid JSON matching singleSlideSchema.`;
     });
 
     const result = JSON.parse(response.text || '{}');
+    if (result?.critique) {
+      result.critique.is_fixed = true;
+      result.critique.severity = 'fixed';
+    }
     res.json(result);
   } catch (error: any) {
     console.error('API /api/deck/apply-vc-fix-slide Error:', error);
@@ -633,7 +643,7 @@ INSTRUCTIONS:
 1. Re-draft ALL 10 slides in order (Slide 1 to 10).
 2. On EVERY slide, directly resolve the corresponding VC concern by incorporating the recommended fix into the headline, key_points, detailed_content, and numeric_claims.
    The resulting slides must read like a bulletproof, institutional-ready pitch deck with no obvious vulnerabilities.
-3. Generate updated investor critiques for all 10 slides confirming that each major risk/concern has been addressed, with severity set to 'low' for resolved items.
+3. Generate updated investor critiques for all 10 slides confirming that each major risk/concern has been addressed, with severity set to 'fixed' and is_fixed set to true for resolved items.
 4. Return strictly valid JSON matching deckAndCritiquesSchema (containing 'slides' array and 'critiques' array).`;
 
     const response = await generateContentWithRetry(ai, {
@@ -647,6 +657,13 @@ INSTRUCTIONS:
     });
 
     const result = JSON.parse(response.text || '{}');
+    if (Array.isArray(result?.critiques)) {
+      result.critiques = result.critiques.map((c: any) => ({
+        ...c,
+        is_fixed: true,
+        severity: 'fixed',
+      }));
+    }
     res.json(result);
   } catch (error: any) {
     console.error('API /api/deck/apply-vc-fixes-deck Error:', error);

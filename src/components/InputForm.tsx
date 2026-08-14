@@ -209,10 +209,15 @@ export const InputForm: React.FC<InputFormProps> = ({
           <div>
             <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
               <Layers className="h-4 w-4 text-zinc-700" />
-              2. Reference Grounding Decks (PDF Uploads)
+              <span>2. Reference Grounding Decks (Relevant Industry Dataset)</span>
+              {industryVertical && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  10 {industryVertical} Decks Active
+                </span>
+              )}
             </h3>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Upload 10+ reference pitch decks (PDFs) to extract real market benchmarks (TAM/SAM/SOM, CAC, valuation, asks).
+              Strictly filters and loads 10 relevant reference pitch decks for <strong>{industryVertical || 'your industry'}</strong> to benchmark TAM/SAM/SOM, CAC, valuation, and asks.
             </p>
           </div>
 
@@ -220,10 +225,10 @@ export const InputForm: React.FC<InputFormProps> = ({
             type="button"
             onClick={onLoadSampleDecks}
             disabled={isProcessing}
-            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200 transition-colors cursor-pointer"
           >
             <FileCheck className="h-3.5 w-3.5 text-zinc-600" />
-            <span>Load 10 Reference Decks</span>
+            <span>Load 10 {industryVertical || ''} Decks</span>
           </button>
         </div>
 

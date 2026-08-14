@@ -180,18 +180,25 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
 
                 {crit && (
                   <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[11px]">
-                    <span className="text-zinc-500 font-medium">Investor Pushback:</span>
-                    <span
-                      className={`font-semibold px-2 py-0.5 rounded text-[10px] uppercase border ${
-                        crit.severity === 'high'
-                          ? 'bg-red-50 text-red-700 border-red-200'
-                          : crit.severity === 'medium'
-                          ? 'bg-amber-50 text-amber-700 border-amber-200'
-                          : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                      }`}
-                    >
-                      {crit.severity} risk
-                    </span>
+                    <span className="text-zinc-500 font-medium">Investor Status:</span>
+                    {crit.is_fixed || crit.severity === 'fixed' ? (
+                      <span className="font-semibold px-2 py-0.5 rounded text-[10px] uppercase border bg-emerald-50 text-emerald-700 border-emerald-300 flex items-center gap-1">
+                        <Check className="h-3 w-3 text-emerald-600" />
+                        Slide Fixed
+                      </span>
+                    ) : (
+                      <span
+                        className={`font-semibold px-2 py-0.5 rounded text-[10px] uppercase border ${
+                          crit.severity === 'high'
+                            ? 'bg-red-50 text-red-700 border-red-200'
+                            : crit.severity === 'medium'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+                        }`}
+                      >
+                        {crit.severity} risk
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

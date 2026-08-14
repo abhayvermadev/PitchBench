@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { ShieldCheck, ChevronDown, ChevronUp, Layers, TrendingUp, DollarSign, Target, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, ChevronDown, ChevronUp, Layers, TrendingUp, DollarSign, Target, Eye, FileText } from 'lucide-react';
 import { IndustryBenchmarkSummary, BenchmarkDeck } from '../types';
 
 interface BenchmarkSummaryPanelProps {
   summary?: IndustryBenchmarkSummary;
   benchmarks: BenchmarkDeck[];
+  onViewReferenceDeck?: (deck: BenchmarkDeck) => void;
 }
 
 export const BenchmarkSummaryPanel: React.FC<BenchmarkSummaryPanelProps> = ({
   summary,
   benchmarks,
+  onViewReferenceDeck,
 }) => {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -20,7 +22,7 @@ export const BenchmarkSummaryPanel: React.FC<BenchmarkSummaryPanelProps> = ({
       {/* Header Bar */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-zinc-50 transition-colors text-left"
+        className="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-zinc-50 transition-colors text-left cursor-pointer"
       >
         <div className="flex items-center gap-3">
           <div className="p-2 rounded bg-zinc-100 text-zinc-800 border border-zinc-200">
@@ -34,7 +36,7 @@ export const BenchmarkSummaryPanel: React.FC<BenchmarkSummaryPanelProps> = ({
               </span>
             </h3>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Ground truth figures, TAM/SAM/SOM ranges, and valuation/ask baselines used to verify this deck.
+              Ground truth figures, TAM/SAM/SOM ranges, and valuation/ask baselines used to verify this deck. Click any deck to inspect full slides.
             </p>
           </div>
         </div>
@@ -99,27 +101,49 @@ export const BenchmarkSummaryPanel: React.FC<BenchmarkSummaryPanelProps> = ({
 
           {/* Reference Decks List */}
           <div className="space-y-2">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-zinc-700" /> Reference Pitch Decks In Dataset
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5 text-zinc-700" /> Reference Pitch Decks In Dataset
+              </h4>
+              <span className="text-[11px] text-zinc-400">Click any deck to open full slides and market telemetry</span>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {benchmarks.map((b) => (
                 <div
                   key={b.id}
-                  className="bg-white border border-zinc-200 rounded p-3 text-xs space-y-1 shadow-xs"
+                  onClick={() => onViewReferenceDeck && onViewReferenceDeck(b)}
+                  className={`bg-white border border-zinc-200 rounded p-3 text-xs space-y-2 shadow-xs transition-all ${
+                    onViewReferenceDeck
+                      ? 'hover:border-zinc-500 hover:shadow-md cursor-pointer group bg-gradient-to-b hover:from-zinc-50/50 hover:to-white'
+                      : ''
+                  }`}
                 >
                   <div className="flex items-center justify-between font-semibold text-zinc-900">
-                    <span className="truncate max-w-[180px]" title={b.fileName}>
-                      {b.fileName}
-                    </span>
-                    <span className="text-[10px] font-mono text-zinc-800 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <FileText className="h-3.5 w-3.5 text-zinc-500 shrink-0 group-hover:text-black" />
+                      <span className="truncate max-w-[170px]" title={b.company_name || b.fileName}>
+                        {b.company_name || b.fileName}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-zinc-800 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200 shrink-0">
                       {b.industry_vertical}
                     </span>
                   </div>
+
                   <p className="text-[11px] text-zinc-500">Stage: {b.funding_stage_guess}</p>
                   <p className="text-[11px] text-zinc-600 font-mono">
                     TAM: {b.tam_sam_som_figures.tam}
                   </p>
+
+                  {onViewReferenceDeck && (
+                    <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-500 group-hover:text-zinc-900 font-medium">
+                      <span>Source: {b.fileName}</span>
+                      <span className="inline-flex items-center gap-1 text-black font-semibold group-hover:underline">
+                        <Eye className="h-3 w-3" /> View Deck
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

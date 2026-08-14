@@ -1,6 +1,16 @@
+export interface ReferenceDeckSlide {
+  slide_number: number;
+  title: string;
+  key_content: string;
+  bullet_points?: string[];
+  metrics_or_data?: string;
+  visual_description?: string;
+}
+
 export interface BenchmarkDeck {
   id: string;
   fileName: string;
+  company_name?: string;
   industry_vertical: string;
   funding_stage_guess: string;
   tam_sam_som_figures: {
@@ -13,6 +23,10 @@ export interface BenchmarkDeck {
   slide_topics_present: string[];
   notable_claims: string[];
   isDefaultSample?: boolean;
+  business_model_summary?: string;
+  valuation_or_ask?: string;
+  target_customers?: string;
+  deck_slides?: ReferenceDeckSlide[];
 }
 
 export interface NumericClaim {
@@ -37,7 +51,9 @@ export interface InvestorCritique {
   slide_name: string;
   concern: string;
   suggested_fix: string;
-  severity: 'high' | 'medium' | 'low';
+  severity: 'high' | 'medium' | 'low' | 'fixed';
+  is_fixed?: boolean;
+  fixed_at?: string;
 }
 
 export interface IndustryBenchmarkSummary {
