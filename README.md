@@ -278,3 +278,11 @@ PitchBench follows the **Clean Minimalism** design system:
 ## 📄 License
 
 This project is open-source under the [MIT License](LICENSE).
+
+**Connect with me** —
+
+LinkedIn : https://www.linkedin.com/in/abhayvermadev/
+
+GitHub : https://github.com/abhayvermadev
+
+Instagram : https://www.instagram.com/d_lazy_coder
