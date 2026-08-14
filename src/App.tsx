@@ -9,6 +9,8 @@ import { BenchmarkSummaryPanel } from './components/BenchmarkSummaryPanel';
 import { PresentationModal } from './components/PresentationModal';
 import { SampleDecksModal } from './components/SampleDecksModal';
 import { ReferenceDeckViewerModal } from './components/ReferenceDeckViewerModal';
+import { DownloadDeckModal } from './components/DownloadDeckModal';
+import { downloadPDFDeck, downloadPPTXDeck } from './utils/exportDeck';
 import { SAMPLE_BENCHMARKS, getRelevantBenchmarkDecks } from './data/sampleBenchmarks';
 import {
   BenchmarkDeck,
@@ -29,6 +31,7 @@ export default function App() {
     'Enterprise Software Engineering Orgs & Tech Leads'
   );
   const [industryVertical, setIndustryVertical] = useState<string>('AI/ML');
+  const [investorPersona, setInvestorPersona] = useState<string>('Early-stage VC');
 
   // Grounding Data State (Default 10 Reference Decks matched to industry vertical)
   const [benchmarks, setBenchmarks] = useState<BenchmarkDeck[]>(() =>
@@ -46,6 +49,7 @@ export default function App() {
   // Modals
   const [showPresentation, setShowPresentation] = useState(false);
   const [showSampleDecks, setShowSampleDecks] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [selectedReferenceDeck, setSelectedReferenceDeck] = useState<BenchmarkDeck | null>(null);
 
   // Update relevant benchmarks whenever industry vertical changes
@@ -186,6 +190,7 @@ export default function App() {
           businessIdea,
           targetAudience,
           industryVertical,
+          investorPersona,
           benchmarks: activeBenchmarks,
         }),
       });
@@ -208,6 +213,7 @@ export default function App() {
           businessIdea,
           targetAudience,
           industryVertical,
+          investorPersona,
           slides: generatedSlides,
           benchmarks: activeBenchmarks,
         }),
@@ -225,6 +231,7 @@ export default function App() {
         slides: generatedSlides,
         critiques,
         benchmark_summary: summary,
+        investor_persona: investorPersona,
       };
 
       setGeneratedData(fullResult);
@@ -267,6 +274,7 @@ export default function App() {
           businessIdea,
           targetAudience,
           industryVertical,
+          investorPersona: generatedData.investor_persona || investorPersona,
           benchmarks,
         }),
       });
@@ -323,6 +331,7 @@ export default function App() {
           businessIdea,
           targetAudience,
           industryVertical,
+          investorPersona: generatedData.investor_persona || investorPersona,
           slides: generatedData.slides,
           critiques: generatedData.critiques,
           benchmarks,
@@ -405,6 +414,7 @@ export default function App() {
           businessIdea,
           targetAudience,
           industryVertical,
+          investorPersona: generatedData.investor_persona || investorPersona,
           benchmarks,
           userInstructions: customInstructions,
         }),
@@ -457,6 +467,16 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  const handleDirectDownloadPDF = () => {
+    if (!generatedData) return;
+    downloadPDFDeck(generatedData, businessIdea, industryVertical, targetAudience);
+  };
+
+  const handleDirectDownloadPPT = async () => {
+    if (!generatedData) return;
+    await downloadPPTXDeck(generatedData, businessIdea, industryVertical, targetAudience);
+  };
+
   const extractedCount = benchmarks.length;
 
   return (
@@ -466,7 +486,9 @@ export default function App() {
         referenceCount={benchmarks.length}
         onOpenSampleDecks={() => setShowSampleDecks(true)}
         onStartPresentation={() => setShowPresentation(true)}
-        onExportJSON={handleExportJSON}
+        onOpenDownloadModal={() => setShowDownloadModal(true)}
+        onDirectDownloadPDF={handleDirectDownloadPDF}
+        onDirectDownloadPPT={handleDirectDownloadPPT}
         hasGeneratedDeck={!!generatedData}
       />
 
@@ -480,6 +502,8 @@ export default function App() {
           setTargetAudience={setTargetAudience}
           industryVertical={industryVertical}
           setIndustryVertical={setIndustryVertical}
+          investorPersona={investorPersona}
+          setInvestorPersona={setInvestorPersona}
           uploadedFiles={uploadedFiles}
           onFileUpload={handleFileUpload}
           onRemoveFile={handleRemoveFile}
@@ -514,19 +538,31 @@ export default function App() {
                 <Sparkles className="h-4 w-4 text-zinc-700" />
                 <span>Generated 10-Slide Pitch Deck</span>
               </h2>
-              <span className="text-xs text-zinc-500 font-mono">
-                Grounded in {benchmarks.length} reference pitch decks ({industryVertical})
-              </span>
+              <div className="flex items-center gap-2">
+                {generatedData.investor_persona && (
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-zinc-900 text-white shadow-xs">
+                    Target: {generatedData.investor_persona}
+                  </span>
+                )}
+                <span className="text-xs text-zinc-500 font-mono">
+                  Grounded in {benchmarks.length} reference pitch decks ({industryVertical})
+                </span>
+              </div>
             </div>
 
             {/* Slide Editor & Investor Critique View */}
             <SlideViewer
               slides={generatedData.slides}
               critiques={generatedData.critiques}
+              investorPersona={generatedData.investor_persona || investorPersona}
               onUpdateSlideContent={handleUpdateSlideContent}
               onRegenerateSlide={handleRegenerateSlide}
               onApplyVcFixSingleSlide={handleApplyVcFixSingleSlide}
               onApplyVcFixCompleteDeck={handleApplyVcFixCompleteDeck}
+              onOpenDownloadModal={() => setShowDownloadModal(true)}
+              onDirectDownloadPDF={handleDirectDownloadPDF}
+              onDirectDownloadPPT={handleDirectDownloadPPT}
+              onPresentDeck={() => setShowPresentation(true)}
               isRegeneratingSlide={isRegeneratingSlide}
               regeneratingSlideNum={regeneratingSlideNum}
               isApplyingFixSlideNum={isApplyingFixSlideNum}
@@ -548,11 +584,24 @@ export default function App() {
         <p>© 2024 PitchBench Analytics — Grounded AI Pitch Deck Generation & Investor Benchmark Engine</p>
       </footer>
 
+      {/* Download Deck Modal */}
+      {showDownloadModal && generatedData && (
+        <DownloadDeckModal
+          data={generatedData}
+          businessIdea={businessIdea}
+          industryVertical={industryVertical}
+          targetAudience={targetAudience}
+          onClose={() => setShowDownloadModal(false)}
+          onPresentDeck={() => setShowPresentation(true)}
+        />
+      )}
+
       {/* Presentation Fullscreen Modal */}
       {showPresentation && generatedData && (
         <PresentationModal
           slides={generatedData.slides}
           onClose={() => setShowPresentation(false)}
+          onOpenDownload={() => setShowDownloadModal(true)}
         />
       )}
 

@@ -11,8 +11,48 @@ import {
   Lightbulb,
   Layers,
   AlertCircle,
+  Briefcase,
+  Target,
 } from 'lucide-react';
 import { FileUploadStatus } from '../types';
+
+export const INVESTOR_PERSONAS = [
+  {
+    id: 'Early-stage VC',
+    label: 'Early-stage VC',
+    subtitle: 'Seed / Series A General Partner',
+    focus: 'Massive $1B+ TAM, 100x return upside, defensible moats & network effects.',
+    badge: '100x Return & Moat',
+  },
+  {
+    id: 'Angel Investor',
+    label: 'Angel Investor',
+    subtitle: 'High-Net-Worth Syndicate / Angel',
+    focus: 'Founder hustle, authentic mission, rapid MVP execution, and capital efficiency.',
+    badge: 'Hustle & Lean Burn',
+  },
+  {
+    id: 'Corporate Strategist',
+    label: 'Corporate Strategist',
+    subtitle: 'CVC / Strategic Enterprise Partner',
+    focus: 'Enterprise synergy, proprietary IP, compliance/security, and M&A upside.',
+    badge: 'Enterprise & M&A',
+  },
+  {
+    id: 'Growth Equity (Series B+)',
+    label: 'Growth Equity (Series B+)',
+    subtitle: 'Growth Stage / Scaling Fund',
+    focus: 'Repeatable GTM, unit economics at scale (LTV:CAC, CAC payback), NRR, and predictability.',
+    badge: 'Unit Economics & NRR',
+  },
+  {
+    id: 'Impact / ESG Investor',
+    label: 'Impact / ESG Investor',
+    subtitle: 'Sustainability & Double-Bottom-Line',
+    focus: 'Measurable environmental/social impact KPIs, regulatory tailwinds, and commercial durability.',
+    badge: 'Impact & Profit',
+  },
+];
 
 interface InputFormProps {
   businessIdea: string;
@@ -21,6 +61,8 @@ interface InputFormProps {
   setTargetAudience: (val: string) => void;
   industryVertical: string;
   setIndustryVertical: (val: string) => void;
+  investorPersona: string;
+  setInvestorPersona: (val: string) => void;
   uploadedFiles: FileUploadStatus[];
   onFileUpload: (files: FileList | File[]) => void;
   onRemoveFile: (id: string) => void;
@@ -49,18 +91,21 @@ const PRESETS = [
   {
     title: 'CognitiveDev - AI Code Agent',
     vertical: 'AI/ML',
+    persona: 'Early-stage VC',
     audience: 'Enterprise Software Engineering Orgs & Tech Leads',
     idea: 'CognitiveDev is an autonomous AI developer agent that monitors GitHub repositories, automatically fixes complex software bugs, runs regression test suites, and drafts pull requests with 99% accuracy. Monetized via per-seat + usage token model.',
   },
   {
     title: 'PayStream - Global B2B Payments',
     vertical: 'Fintech',
+    persona: 'Growth Equity (Series B+)',
     audience: 'Cross-border E-commerce Platforms & Global SaaS Exporters',
     idea: 'PayStream provides instant zero-fee cross-border treasury settlements for B2B exporters using automated FX smart routing. Reduces international payment fees from 3.5% down to 0.2% while providing real-time multi-currency virtual IBANs.',
   },
   {
     title: 'PulseCare - Remote Cardiac Monitoring',
     vertical: 'HealthTech',
+    persona: 'Corporate Strategist',
     audience: 'Cardiology Practices & Healthcare Systems',
     idea: 'PulseCare is a FDA-cleared continuous cardiac patch sensor paired with predictive AI that detects arrhythmias 72 hours before clinical onset. Reimbursed through CPT codes 99453/99454 with $65/patient/month recurring SaaS revenue.',
   },
@@ -73,6 +118,8 @@ export const InputForm: React.FC<InputFormProps> = ({
   setTargetAudience,
   industryVertical,
   setIndustryVertical,
+  investorPersona,
+  setInvestorPersona,
   uploadedFiles,
   onFileUpload,
   onRemoveFile,
@@ -106,11 +153,17 @@ export const InputForm: React.FC<InputFormProps> = ({
     }
   };
 
-  const applyPreset = (preset: typeof PRESETS[0]) => {
+  const applyPreset = (preset: (typeof PRESETS)[0]) => {
     setBusinessIdea(preset.idea);
     setTargetAudience(preset.audience);
     setIndustryVertical(preset.vertical);
+    if (preset.persona) {
+      setInvestorPersona(preset.persona);
+    }
   };
+
+  const currentPersonaObj =
+    INVESTOR_PERSONAS.find((p) => p.id === investorPersona) || INVESTOR_PERSONAS[0];
 
   const isFormValid = businessIdea.trim().length > 10 && industryVertical.trim().length > 0;
 
@@ -125,7 +178,7 @@ export const InputForm: React.FC<InputFormProps> = ({
               1. Define Pitch Inputs
             </h2>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Provide your core business idea, target audience, and industry vertical.
+              Provide your core business idea, target audience, industry vertical, and target investor persona.
             </p>
           </div>
 
@@ -158,7 +211,7 @@ export const InputForm: React.FC<InputFormProps> = ({
             value={businessIdea}
             onChange={(e) => setBusinessIdea(e.target.value)}
             disabled={isProcessing}
-            rows={4}
+            rows={5}
             placeholder="Describe your business idea, value proposition, monetization model, and key differentiation in 2-4 sentences..."
             className="w-full bg-white border border-zinc-200 rounded p-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all resize-y"
           />
@@ -200,6 +253,75 @@ export const InputForm: React.FC<InputFormProps> = ({
               className="w-full bg-white border border-zinc-200 rounded p-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Investor Persona Selector Section */}
+      <div className="space-y-3 pt-4 border-t border-zinc-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
+              <Briefcase className="h-3.5 w-3.5 text-zinc-800" />
+              Target Investor Persona <span className="text-red-500">*</span>
+            </label>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Refines the tone, narrative emphasis, financial metrics focus, and skepticism lens across the 10 slides and VC critique.
+            </p>
+          </div>
+
+          <div className="text-xs text-zinc-500">
+            <span className="font-semibold text-zinc-900">Current Lens:</span>{' '}
+            <span className="font-medium text-black bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+              {currentPersonaObj.label}
+            </span>
+          </div>
+        </div>
+
+        {/* Persona Pill Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+          {INVESTOR_PERSONAS.map((persona) => {
+            const isSelected = investorPersona === persona.id;
+            return (
+              <button
+                key={persona.id}
+                type="button"
+                onClick={() => setInvestorPersona(persona.id)}
+                disabled={isProcessing}
+                className={`p-3 rounded-md text-left transition-all flex flex-col justify-between border cursor-pointer ${
+                  isSelected
+                    ? 'border-black bg-zinc-900 text-white shadow-xs ring-1 ring-black'
+                    : 'border-zinc-200 bg-zinc-50/70 hover:bg-zinc-100/90 text-zinc-800 hover:border-zinc-300'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-zinc-900'}`}>
+                      {persona.label}
+                    </span>
+                    <span
+                      className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
+                        isSelected
+                          ? 'bg-zinc-800 text-zinc-200 border border-zinc-700'
+                          : 'bg-white text-zinc-600 border border-zinc-200'
+                      }`}
+                    >
+                      {persona.badge}
+                    </span>
+                  </div>
+                  <p className={`text-[11px] leading-snug line-clamp-2 ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                    {persona.focus}
+                  </p>
+                </div>
+
+                <div className="mt-2 pt-2 border-t border-zinc-200/40 flex items-center gap-1 text-[10px]">
+                  <Target className={`h-3 w-3 ${isSelected ? 'text-zinc-400' : 'text-zinc-400'}`} />
+                  <span className={`truncate ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                    {persona.subtitle}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -338,7 +460,8 @@ export const InputForm: React.FC<InputFormProps> = ({
             </span>
           ) : (
             <span className="text-emerald-700 flex items-center gap-1.5 font-medium">
-              <CheckCircle2 className="h-4 w-4" /> Ready to run 3-stage benchmarked pitch deck pipeline.
+              <CheckCircle2 className="h-4 w-4" /> Ready to generate deck calibrated for{' '}
+              <strong className="text-zinc-900 font-semibold">{currentPersonaObj.label}</strong>.
             </span>
           )}
         </div>
@@ -354,9 +477,10 @@ export const InputForm: React.FC<InputFormProps> = ({
           }`}
         >
           <Sparkles className="h-3.5 w-3.5 text-zinc-300" />
-          <span>{isProcessing ? 'Pipeline Running...' : 'Generate My Pitch Deck'}</span>
+          <span>{isProcessing ? 'Pipeline Running...' : `Generate Pitch Deck for ${currentPersonaObj.label}`}</span>
         </button>
       </div>
     </div>
   );
 };
+

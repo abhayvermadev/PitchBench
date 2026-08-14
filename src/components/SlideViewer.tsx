@@ -13,6 +13,7 @@ import {
   Sparkles,
   Loader2,
   ShieldCheck,
+  Download,
 } from 'lucide-react';
 import { PitchSlide, InvestorCritique } from '../types';
 import { InvestorCritiqueCard } from './InvestorCritiqueCard';
@@ -20,10 +21,15 @@ import { InvestorCritiqueCard } from './InvestorCritiqueCard';
 interface SlideViewerProps {
   slides: PitchSlide[];
   critiques: InvestorCritique[];
+  investorPersona?: string;
   onUpdateSlideContent: (slideNumber: number, newContent: string, newHeadline?: string) => void;
   onRegenerateSlide: (slideNumber: number, customInstructions?: string) => void;
   onApplyVcFixSingleSlide?: (slideNumber: number) => void;
   onApplyVcFixCompleteDeck?: () => void;
+  onOpenDownloadModal?: () => void;
+  onDirectDownloadPDF?: () => void;
+  onDirectDownloadPPT?: () => void;
+  onPresentDeck?: () => void;
   isRegeneratingSlide: boolean;
   regeneratingSlideNum?: number;
   isApplyingFixSlideNum?: number;
@@ -33,10 +39,15 @@ interface SlideViewerProps {
 export const SlideViewer: React.FC<SlideViewerProps> = ({
   slides,
   critiques,
+  investorPersona,
   onUpdateSlideContent,
   onRegenerateSlide,
   onApplyVcFixSingleSlide,
   onApplyVcFixCompleteDeck,
+  onOpenDownloadModal,
+  onDirectDownloadPDF,
+  onDirectDownloadPPT,
+  onPresentDeck,
   isRegeneratingSlide,
   regeneratingSlideNum,
   isApplyingFixSlideNum,
@@ -75,12 +86,19 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
           <div className="flex items-start gap-3">
             <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
             <div className="space-y-0.5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
-                <span>Complete Deck VC Optimization</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                  Complete Deck VC Optimization
+                </h3>
                 <span className="bg-emerald-500/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded font-mono font-medium">
                   AI Investor Defense
                 </span>
-              </h3>
+                {investorPersona && (
+                  <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] px-2 py-0.5 rounded font-medium">
+                    Lens: {investorPersona}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-zinc-300">
                 Auto-apply all investor critiques and defense recommendations across all 10 slides simultaneously.
               </p>
@@ -128,30 +146,80 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
           ))}
         </div>
 
-        {/* View Toggle */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => setViewMode('focused')}
-            className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 transition-colors ${
-              viewMode === 'focused'
-                ? 'bg-zinc-900 text-white'
-                : 'bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50'
-            }`}
-          >
-            <Eye className="h-3.5 w-3.5" />
-            <span>Focus Mode</span>
-          </button>
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 transition-colors ${
-              viewMode === 'grid'
-                ? 'bg-zinc-900 text-white'
-                : 'bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50'
-            }`}
-          >
-            <Grid className="h-3.5 w-3.5" />
-            <span>10-Slide Overview</span>
-          </button>
+        {/* View and Export Toggles */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <div className="flex items-center bg-zinc-100 p-0.5 rounded border border-zinc-200">
+            <button
+              onClick={() => setViewMode('focused')}
+              className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                viewMode === 'focused'
+                  ? 'bg-white text-zinc-900 shadow-xs'
+                  : 'text-zinc-600 hover:text-zinc-900'
+              }`}
+            >
+              <Eye className="h-3 w-3" />
+              <span>Focus</span>
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-white text-zinc-900 shadow-xs'
+                  : 'text-zinc-600 hover:text-zinc-900'
+              }`}
+            >
+              <Grid className="h-3 w-3" />
+              <span>Overview</span>
+            </button>
+          </div>
+
+          {onPresentDeck && (
+            <button
+              type="button"
+              onClick={onPresentDeck}
+              className="px-2.5 py-1.5 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Enter full-screen live presentation mode"
+            >
+              <Presentation className="h-3.5 w-3.5 text-zinc-700" />
+              <span>Present</span>
+            </button>
+          )}
+
+          {onDirectDownloadPDF && (
+            <button
+              type="button"
+              onClick={onDirectDownloadPDF}
+              className="px-2.5 py-1.5 rounded bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Download direct 16:9 PDF presentation"
+            >
+              <Download className="h-3.5 w-3.5 text-red-600" />
+              <span>PDF</span>
+            </button>
+          )}
+
+          {onDirectDownloadPPT && (
+            <button
+              type="button"
+              onClick={onDirectDownloadPPT}
+              className="px-2.5 py-1.5 rounded bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Download direct Microsoft PowerPoint presentation (.pptx)"
+            >
+              <Download className="h-3.5 w-3.5 text-orange-600" />
+              <span>PPT</span>
+            </button>
+          )}
+
+          {onOpenDownloadModal && (
+            <button
+              type="button"
+              onClick={onOpenDownloadModal}
+              className="px-3 py-1.5 rounded bg-black hover:bg-zinc-800 text-white text-xs font-medium flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              title="Open full download menu (PDF, PPT, HTML, Markdown, JSON, Memo)"
+            >
+              <Download className="h-3.5 w-3.5 text-white" />
+              <span>All Formats</span>
+            </button>
+          )}
         </div>
       </div>
 

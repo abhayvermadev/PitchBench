@@ -5,7 +5,9 @@ interface HeaderProps {
   referenceCount: number;
   onOpenSampleDecks: () => void;
   onStartPresentation: () => void;
-  onExportJSON: () => void;
+  onOpenDownloadModal: () => void;
+  onDirectDownloadPDF?: () => void;
+  onDirectDownloadPPT?: () => void;
   hasGeneratedDeck: boolean;
 }
 
@@ -13,7 +15,9 @@ export const Header: React.FC<HeaderProps> = ({
   referenceCount,
   onOpenSampleDecks,
   onStartPresentation,
-  onExportJSON,
+  onOpenDownloadModal,
+  onDirectDownloadPDF,
+  onDirectDownloadPPT,
   hasGeneratedDeck,
 }) => {
   return (
@@ -44,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={onOpenSampleDecks}
-            className="flex items-center gap-2 px-3.5 py-2 rounded text-xs font-medium bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-300 transition-colors"
+            className="flex items-center gap-2 px-3.5 py-2 rounded text-xs font-medium bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-300 transition-colors cursor-pointer"
             title="Inspect loaded benchmark reference decks"
           >
             <FolderOpen className="h-3.5 w-3.5 text-zinc-500" />
@@ -53,20 +57,43 @@ export const Header: React.FC<HeaderProps> = ({
 
           {hasGeneratedDeck && (
             <>
+              {onDirectDownloadPDF && (
+                <button
+                  onClick={onDirectDownloadPDF}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 transition-colors cursor-pointer"
+                  title="Direct Download PDF presentation"
+                >
+                  <Download className="h-3.5 w-3.5 text-red-600" />
+                  <span>PDF</span>
+                </button>
+              )}
+
+              {onDirectDownloadPPT && (
+                <button
+                  onClick={onDirectDownloadPPT}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded text-xs font-semibold bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 transition-colors cursor-pointer"
+                  title="Direct Download PowerPoint PPT (.pptx)"
+                >
+                  <Download className="h-3.5 w-3.5 text-orange-600" />
+                  <span>PPT</span>
+                </button>
+              )}
+
               <button
                 onClick={onStartPresentation}
-                className="flex items-center gap-2 px-5 py-2 rounded text-xs font-medium bg-black text-white hover:bg-zinc-800 transition-colors shadow-xs"
+                className="flex items-center gap-2 px-3.5 py-2 rounded text-xs font-medium bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-300 transition-colors cursor-pointer"
               >
-                <Sparkles className="h-3.5 w-3.5 text-zinc-300" />
-                <span>Present Deck</span>
+                <Sparkles className="h-3.5 w-3.5 text-zinc-700" />
+                <span>Present</span>
               </button>
 
               <button
-                onClick={onExportJSON}
-                className="flex items-center gap-2 px-3.5 py-2 rounded text-xs font-medium bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-300 transition-colors"
+                onClick={onOpenDownloadModal}
+                className="flex items-center gap-2 px-3.5 py-2 rounded text-xs font-medium bg-black text-white hover:bg-zinc-800 transition-colors shadow-xs cursor-pointer"
+                title="Download pitch deck in PDF, PPT, HTML, Markdown, or JSON"
               >
-                <Download className="h-3.5 w-3.5 text-zinc-500" />
-                <span>Export</span>
+                <Download className="h-3.5 w-3.5 text-white" />
+                <span>All Exports</span>
               </button>
             </>
           )}

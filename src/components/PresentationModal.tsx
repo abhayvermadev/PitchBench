@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { PitchSlide } from '../types';
-import { X, ChevronLeft, ChevronRight, Presentation, Maximize2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Presentation, Download } from 'lucide-react';
 
 interface PresentationModalProps {
   slides: PitchSlide[];
   onClose: () => void;
+  onOpenDownload?: () => void;
 }
 
-export const PresentationModal: React.FC<PresentationModalProps> = ({ slides, onClose }) => {
+export const PresentationModal: React.FC<PresentationModalProps> = ({
+  slides,
+  onClose,
+  onOpenDownload,
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -39,13 +44,23 @@ export const PresentationModal: React.FC<PresentationModalProps> = ({ slides, on
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-xs font-mono font-bold bg-zinc-100 text-zinc-800 px-3 py-1 rounded-full border border-zinc-200">
             Slide {currentIndex + 1} of {slides.length}
           </span>
+          {onOpenDownload && (
+            <button
+              onClick={onOpenDownload}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-medium border border-zinc-200 transition-colors cursor-pointer"
+              title="Download presentation files"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download</span>
+            </button>
+          )}
           <button
             onClick={onClose}
-            className="p-2 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors border border-zinc-200"
+            className="p-1.5 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors border border-zinc-200 cursor-pointer"
             title="Exit Presentation"
           >
             <X className="h-4 w-4" />

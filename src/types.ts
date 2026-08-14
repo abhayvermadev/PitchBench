@@ -68,10 +68,26 @@ export interface IndustryBenchmarkSummary {
   };
 }
 
+export type InvestorPersonaType =
+  | 'Early-stage VC'
+  | 'Angel Investor'
+  | 'Corporate Strategist'
+  | 'Growth Equity (Series B+)'
+  | 'Impact / ESG Investor';
+
+export interface InvestorPersonaDetail {
+  id: InvestorPersonaType;
+  label: string;
+  shortDesc: string;
+  focusAreas: string[];
+  toneGuide: string;
+}
+
 export interface GeneratedDeckData {
   slides: PitchSlide[];
   critiques: InvestorCritique[];
   benchmark_summary: IndustryBenchmarkSummary;
+  investor_persona?: string;
 }
 
 export type PipelineStage = 'idle' | 'extracting' | 'generating' | 'critiquing' | 'complete' | 'error';

@@ -394,20 +394,69 @@ Extract structured benchmark figures, market sizes (TAM/SAM/SOM), traction metri
   }
 });
 
+// Helper for persona guidance
+function getPersonaGuidance(investorPersona?: string) {
+  const p = (investorPersona || 'Early-stage VC').toLowerCase();
+  if (p.includes('angel')) {
+    return {
+      name: 'Angel Investor / Early Syndicate',
+      focus: 'Founder hustle, authentic mission, rapid MVP execution, initial pilot traction, capital efficiency, low cash burn, and speed to first revenue.',
+      tone: 'Personal, visionary, scrappy, high-trust, and focused on fast proof-of-concept.',
+      critiqueFocus: 'Probes runway sustainability, early customer discovery signals, low-overhead execution, founder commitment, and practical milestones before the next round.'
+    };
+  }
+  if (p.includes('corporate') || p.includes('cvc') || p.includes('strategist') || p.includes('strategic')) {
+    return {
+      name: 'Corporate Strategist / CVC (Corporate Venture Capital)',
+      focus: 'Enterprise synergy, proprietary IP & defensible technology, enterprise compliance/security readiness, strategic integration into ecosystem workflows, and M&A upside.',
+      tone: 'Institutional, strategic, risk-aware, enterprise-grade, and partnership-focused.',
+      critiqueFocus: 'Probes enterprise sales cycles, proprietary moat against big tech incumbents, vendor risk, compliance vulnerabilities, and strategic ecosystem lock-in.'
+    };
+  }
+  if (p.includes('growth') || p.includes('series b')) {
+    return {
+      name: 'Growth Equity / Series B+ Investor',
+      focus: 'Repeatable GTM engine, unit economics at scale (LTV/CAC > 3.5x, CAC payback < 12 mos), Net Revenue Retention (NRR > 120%), churn resilience, gross margin expansion, and pipeline predictability.',
+      tone: 'Data-driven, financialized, metrics-heavy, and scaling-obsessed.',
+      critiqueFocus: 'Probes unit economic degradation with scale, CAC escalation, gross margin leakage, sales quota attainment, customer concentration risk, and cohort retention.'
+    };
+  }
+  if (p.includes('impact') || p.includes('climate') || p.includes('esg')) {
+    return {
+      name: 'Impact / ESG / Climate Investor',
+      focus: 'Measurable environmental or societal impact KPIs, double bottom line (profit + purpose), regulatory/subsidized tailwinds, lifecycle carbon/waste reduction, and equitable governance.',
+      tone: 'Purpose-led yet commercially rigorous, long-term horizon, and impact-verified.',
+      critiqueFocus: 'Probes greenwashing risks, verification/measurement rigor of impact metrics, regulatory subsidy dependencies, unit economic durability, and supply chain ethics.'
+    };
+  }
+  // Default: Early-stage VC
+  return {
+    name: 'Early-stage VC (Seed / Series A General Partner)',
+    focus: 'Massive $1B+ TAM opportunity, 100x fund returner upside, defensible moat (network effects, data flywheels, high switching costs), founder-market fit, and hyper-scalable economics.',
+    tone: 'Ambitious, institutional, venture-scale, punchy, and high-conviction.',
+    critiqueFocus: 'Probes whether the market is truly large enough for a venture return, defensibility against aggressive fast followers, true moat vs superficial wrapper, and scalability of customer acquisition.'
+  };
+}
+
 // Stage 2: Deck Generation grounded in benchmark dataset
 app.post('/api/deck/generate', async (req, res) => {
   try {
     const ai = getGeminiClient();
-    const { businessIdea, targetAudience, industryVertical, benchmarks } = req.body;
+    const { businessIdea, targetAudience, industryVertical, benchmarks, investorPersona } = req.body;
 
     if (!businessIdea || !industryVertical) {
       return res.status(400).json({ error: 'Business idea and industry vertical are required.' });
     }
 
+    const personaInfo = getPersonaGuidance(investorPersona);
     const benchmarkText = JSON.stringify(benchmarks || [], null, 2);
 
-    const prompt = `You are a world-class venture capitalist, pitch strategist, and financial analyst.
-Turn this raw business idea into a benchmarked, investor-ready 10-slide pitch deck grounded in the provided reference benchmark dataset.
+    const prompt = `You are an elite pitch strategist and venture advisor crafting a pitch deck specifically tailored for a target investor persona: "${personaInfo.name}".
+
+TARGET INVESTOR PERSONA:
+- Persona: ${personaInfo.name}
+- Strategic Focus: ${personaInfo.focus}
+- Narrative Tone & Style: ${personaInfo.tone}
 
 INPUT DETAILS:
 - Business Idea: "${businessIdea}"
@@ -431,12 +480,17 @@ INSTRUCTIONS:
    Slide 9: Traction Metrics
    Slide 10: Funding Ask
 
-3. CRITICAL BENCHMARKING REQUIREMENT:
+3. PERSONA CALIBRATION:
+   - Frame the narrative, headlines, and value propositions specifically to appeal to ${personaInfo.name}.
+   - Emphasize: ${personaInfo.focus}.
+   - Tone: ${personaInfo.tone}.
+
+4. CRITICAL BENCHMARKING REQUIREMENT:
    Every numeric claim (TAM/SAM/SOM market size figures, traction metrics like ARR/MoM, funding ask, valuation estimates) MUST be checked against the range found in the benchmark dataset for that vertical.
    - Set 'within_benchmark_range' to true if the proposed figure aligns with benchmark ranges, or false if it is unusually high/low.
    - Provide a clear 'benchmark_comparison_note' explaining how the figure compares to reference decks (e.g. "User TAM of $8B is above the $1B-$5B benchmark range for Seed SaaS decks").
 
-4. Format response strictly according to JSON responseSchema. Make slide text persuasive, professional, concise, and pitch-ready.`;
+5. Format response strictly according to JSON responseSchema. Make slide text persuasive, professional, concise, and pitch-ready.`;
 
     const response = await generateContentWithRetry(ai, {
       model: 'gemini-3.7-flash',
@@ -448,6 +502,7 @@ INSTRUCTIONS:
     });
 
     const result = JSON.parse(response.text || '{}');
+    result.investor_persona = personaInfo.name;
     res.json(result);
   } catch (error: any) {
     console.error('API /api/deck/generate Error:', error);
@@ -459,18 +514,25 @@ INSTRUCTIONS:
 app.post('/api/deck/critique', async (req, res) => {
   try {
     const ai = getGeminiClient();
-    const { businessIdea, targetAudience, industryVertical, slides, benchmarks } = req.body;
+    const { businessIdea, targetAudience, industryVertical, slides, benchmarks, investorPersona } = req.body;
 
+    const personaInfo = getPersonaGuidance(investorPersona);
     const slidesText = JSON.stringify(slides || [], null, 2);
     const benchmarkText = JSON.stringify(benchmarks || [], null, 2);
 
-    const prompt = `Role-play as a highly skeptical, seasoned Silicon Valley VC General Partner who has reviewed thousands of pitch decks in the ${industryVertical} space and is intimately familiar with standard market benchmarks.
+    const prompt = `Role-play as a highly skeptical, seasoned ${personaInfo.name} who is reviewing this pitch deck in the ${industryVertical} space and is intimately familiar with standard market benchmarks.
 
-Analyze these 10 generated pitch slides against the user idea and benchmark dataset:
+YOUR PERSONA LENS:
+- Persona: ${personaInfo.name}
+- Primary Scrutiny & Objections Focus: ${personaInfo.critiqueFocus}
+- Standards: You demand rigorous proof, realistic market metrics, defensibility, and zero hand-waving.
+
+Analyze these 10 generated pitch slides against the user idea, investor persona, and benchmark dataset:
 
 BUSINESS IDEA: "${businessIdea}"
 TARGET AUDIENCE: "${targetAudience}"
 VERTICAL: "${industryVertical}"
+INVESTOR PERSONA: "${personaInfo.name}"
 
 SLIDES TO CRITIQUE:
 ${slidesText}
@@ -479,8 +541,8 @@ REFERENCE BENCHMARK DATASET:
 ${benchmarkText}
 
 TASK:
-For each of the 10 slides, provide a sharp, realistic investor critique.
-Flag anything that is thin, unrealistic, unverified, ungrounded, or likely to draw a hard pushback question during a pitch meeting.
+For each of the 10 slides, provide a sharp, realistic investor critique from the perspective of a ${personaInfo.name}.
+Flag anything that is thin, unrealistic, unverified, ungrounded, or likely to draw a hard pushback question during an investment committee review.
 Provide a clear, actionable 'suggested_fix' for each slide. Set severity to 'high', 'medium', or 'low'.
 Return strictly valid JSON adhering to responseSchema.`;
 
@@ -489,7 +551,7 @@ Return strictly valid JSON adhering to responseSchema.`;
       contents: prompt,
       config: {
         systemInstruction:
-          'You are a skeptical, highly experienced venture capitalist partner. Be direct, insightful, demanding, and constructive.',
+          `You are a skeptical, highly experienced ${personaInfo.name}. Be direct, insightful, demanding, and constructive through this exact investor persona lens.`,
         responseMimeType: 'application/json',
         responseSchema: critiqueSchema,
       },
@@ -515,11 +577,15 @@ app.post('/api/deck/regenerate-slide', async (req, res) => {
       industryVertical,
       benchmarks,
       userInstructions,
+      investorPersona,
     } = req.body;
 
-    const prompt = `Regenerate Slide #${slideNumber} (${currentSlide?.slide_name || 'Pitch Slide'}) for PitchBench.
+    const personaInfo = getPersonaGuidance(investorPersona);
+
+    const prompt = `Regenerate Slide #${slideNumber} (${currentSlide?.slide_name || 'Pitch Slide'}) for PitchBench tailored for a "${personaInfo.name}".
 
 CONTEXT:
+- Target Investor Persona: "${personaInfo.name}" (Focus: ${personaInfo.focus})
 - Business Idea: "${businessIdea}"
 - Target Audience: "${targetAudience}"
 - Industry Vertical: "${industryVertical}"
@@ -527,7 +593,7 @@ CONTEXT:
 - Current Slide Data: ${JSON.stringify(currentSlide || {})}
 - Reference Benchmarks: ${JSON.stringify(benchmarks || [])}
 
-Re-draft this single slide to be exceptionally pitch-ready, checking all numeric claims against the reference benchmarks, and generate a revised investor critique for this slide.
+Re-draft this single slide to be exceptionally pitch-ready for a ${personaInfo.name}, checking all numeric claims against the reference benchmarks, and generate a revised investor critique for this slide from that investor's perspective.
 Return strictly valid JSON according to responseSchema.`;
 
     const response = await generateContentWithRetry(ai, {
@@ -559,9 +625,12 @@ app.post('/api/deck/apply-vc-fix-slide', async (req, res) => {
       targetAudience,
       industryVertical,
       benchmarks,
+      investorPersona,
     } = req.body;
 
-    const prompt = `You are an elite pitch strategist and venture capitalist. 
+    const personaInfo = getPersonaGuidance(investorPersona);
+
+    const prompt = `You are an elite pitch strategist and advisor preparing a deck for a "${personaInfo.name}". 
 Your objective is to AUTO-FIX Slide #${slideNumber} (${currentSlide?.slide_name || 'Slide'}) by directly incorporating the investor critique and defense recommendation into the slide content.
 
 SLIDE TO FIX:
@@ -572,11 +641,12 @@ SLIDE TO FIX:
 - Current Key Points: ${JSON.stringify(currentSlide?.key_points || [])}
 - Current Numeric Claims: ${JSON.stringify(currentSlide?.numeric_claims || [])}
 
-INVESTOR CRITIQUE TO RESOLVE:
-- VC Concern: "${critique?.concern || 'Needs stronger proof points'}"
+INVESTOR CRITIQUE TO RESOLVE (${personaInfo.name} perspective):
+- Concern: "${critique?.concern || 'Needs stronger proof points'}"
 - Recommended Fix / Defense Strategy: "${critique?.suggested_fix || 'Add clear metrics and risk mitigation'}"
 
 BUSINESS CONTEXT:
+- Investor Persona: "${personaInfo.name}"
 - Business Idea: "${businessIdea}"
 - Target Audience: "${targetAudience}"
 - Industry Vertical: "${industryVertical}"
@@ -584,7 +654,7 @@ BUSINESS CONTEXT:
 
 TASK:
 1. Completely rewrite and upgrade this slide's 'headline', 'key_points', 'detailed_content', and 'numeric_claims'.
-   DO NOT simply append text like "Note: fix applied". Instead, seamlessly integrate the VC defense strategy, metrics, and evidence directly into the primary copy so the slide stands as a rock-solid, investor-grade asset.
+   DO NOT simply append text like "Note: fix applied". Instead, seamlessly integrate the defense strategy, metrics, and evidence directly into the primary copy so the slide satisfies a ${personaInfo.name}.
 2. Produce a new revised 'critique' for this slide acknowledging that the objection has been addressed, setting severity to 'low'.
 Return strictly valid JSON matching singleSlideSchema.`;
 
@@ -620,12 +690,16 @@ app.post('/api/deck/apply-vc-fixes-deck', async (req, res) => {
       slides,
       critiques,
       benchmarks,
+      investorPersona,
     } = req.body;
 
-    const prompt = `You are a Silicon Valley Managing Partner and pitch deck master.
+    const personaInfo = getPersonaGuidance(investorPersona);
+
+    const prompt = `You are an elite pitch deck master advising a startup raising from a "${personaInfo.name}".
 Your goal is to AUTO-FIX the ENTIRE 10-slide pitch deck by applying all investor critiques and recommended defense strategies across all slides.
 
 BUSINESS CONTEXT:
+- Investor Persona: "${personaInfo.name}"
 - Idea: "${businessIdea}"
 - Target Audience: "${targetAudience}"
 - Industry Vertical: "${industryVertical}"
@@ -633,7 +707,7 @@ BUSINESS CONTEXT:
 CURRENT 10 SLIDES:
 ${JSON.stringify(slides || [])}
 
-INVESTOR CRITIQUES AND VC RECOMMENDATIONS FOR ALL SLIDES:
+INVESTOR CRITIQUES AND RECOMMENDATIONS FOR ALL SLIDES:
 ${JSON.stringify(critiques || [])}
 
 REFERENCE BENCHMARKS:
@@ -641,8 +715,7 @@ ${JSON.stringify(benchmarks || [])}
 
 INSTRUCTIONS:
 1. Re-draft ALL 10 slides in order (Slide 1 to 10).
-2. On EVERY slide, directly resolve the corresponding VC concern by incorporating the recommended fix into the headline, key_points, detailed_content, and numeric_claims.
-   The resulting slides must read like a bulletproof, institutional-ready pitch deck with no obvious vulnerabilities.
+2. On EVERY slide, directly resolve the corresponding investor concern by incorporating the recommended fix into the headline, key_points, detailed_content, and numeric_claims with the tone and rigor expected by a ${personaInfo.name}.
 3. Generate updated investor critiques for all 10 slides confirming that each major risk/concern has been addressed, with severity set to 'fixed' and is_fixed set to true for resolved items.
 4. Return strictly valid JSON matching deckAndCritiquesSchema (containing 'slides' array and 'critiques' array).`;
 
@@ -650,7 +723,7 @@ INSTRUCTIONS:
       model: 'gemini-3.7-flash',
       contents: prompt,
       config: {
-        systemInstruction: 'You are an expert VC advisor fixing a pitch deck to guarantee maximum investor approval.',
+        systemInstruction: `You are an expert pitch advisor fixing a pitch deck to guarantee maximum approval from a ${personaInfo.name}.`,
         responseMimeType: 'application/json',
         responseSchema: deckAndCritiquesSchema,
       },
